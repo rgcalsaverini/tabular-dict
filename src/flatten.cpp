@@ -4,7 +4,10 @@
 #include <iostream>
 
 using std::vector;
+using std::variant;
 using std::string;
+using std::optional;
+
 
 std::string replaceSubstr(const std::string &str, const std::string &find_str, const std::string &replace_str) {
     string new_str;
@@ -21,6 +24,14 @@ std::string replaceSubstr(const std::string &str, const std::string &find_str, c
     return new_str;
 }
 
+variant<long int, string> intOrString(string key) {
+    bool is_digit_key = key[0] == '['
+                        && key[key.size() - 1] == ']'
+                        && std::all_of(key.begin() + 1, key.end() - 1, [](char c) { return c >= '0' && c <= '9'; });
+    if (!is_digit_key) return key;
+    return std::stoi(key.substr(1, key.size() - 2));
+}
+
 string makePath(const string &current_path, const string &key, const string &separator, EscapeType escape) {
     string new_key;
     if (escape == EscapeType::DOUBLE) new_key = replaceSubstr(key, separator, separator + separator);
@@ -31,56 +42,50 @@ string makePath(const string &current_path, const string &key, const string &sep
     return current_path.empty() ? new_key : current_path + separator + new_key;
 }
 
-std::vector<std::variant<int, std::string>> splitPath(const std::string &path,
-                                                      const std::string &separator,
-                                                      EscapeType escape,
-                                                      bool mark_arrays) {
-    std::vector<std::variant<int, std::string>> path_parts;
-    unsigned long start = 0;
-    unsigned long pos = path.find(separator);
-    string acc;
-
-    while (pos != string::npos) {
-        std::cerr << "Pos: " << pos << "\n";
-        if (escape == EscapeType::DOUBLE) {
-
-        } else if (escape == EscapeType::SLASH) {
-            if (pos > 0 and path[pos - 1] != '\\') {
-                string new_key = path.substr(start, pos);
-                replaceSubstr(new_key, "\\", "");
-                path_parts.emplace_back(new_key);
-                start = pos + separator.size();
-                pos = path.find(separator, start);
-
-            } else {
-                start = pos + separator.size();
-                pos = path.find(separator, start);
-
-            }
-        } else {
-            path_parts.emplace_back(path.substr(start, pos));
-            start = pos + separator.size();
-            pos = path.find(separator, start);
-        }
-    }
-
-    if (key_start < path.size()) path_parts.emplace_back(path.substr(key_start, pos));
-    return path_parts;
+vector<variant<long int, string>> splitPath(const string &path,
+                                            const string &separator,
+                                            EscapeType escape,
+                                            bool mark_arrays) {
+    if (escape == EscapeType::SLASH) return makePathSlash(path, separator, mark_arrays);
 }
 
-//unsigned long next_sep = path.find(separator, pos + separator.size());
-//            std::cerr << "Next Sep: " << next_sep << "\n";
-//            if (next_sep > pos + separator.size()) {
-//                std::cerr << "Not escaped " << key_start << ":" << pos << "\n";
-//                path_parts.emplace_back(path.substr(key_start, pos));
-//                key_start = next_sep + separator.size();
-//                find_start = key_start;
-//                pos = next_sep + separator.size();
-//                continue;
-//            }
-//            std::cerr << "Escaped\n";
-//            find_start = pos + separator.size();
-//            pos = next_sep;
+vector<variant<long int, string>> makePathSlash(const string &path, const string &separator, bool mark_arrays) {
+    string current_key;
+    std::vector<std::variant<long int, std::string>> path_parts;
+    int64_t start = 0;
+    int64_t pos = path.find(separator);
+    int64_t len;
+
+    while (pos != string::npos) {
+        bool is_escaped = false;
+        for (int64_t i = pos - 1; i >= 0 && path[i] == '\\'; i--) is_escaped = !is_escaped;
+
+        if (is_escaped) {
+            len = pos - 1 - start;
+            current_key += replaceSubstr(path.substr(start, len), "\\\\", "\\") + separator;
+        } else {
+            len = pos - start;
+            current_key += replaceSubstr(path.substr(start, len), "\\\\", "\\");
+
+            path_parts.emplace_back(intOrString(current_key));
+            current_key = "";
+        }
+        start = pos + separator.size();
+        pos = path.find(separator, start);
+    }
+
+    if (start < path.size()) {
+        current_key += replaceSubstr(path.substr(start, pos), "\\\\", "\\");
+        path_parts.emplace_back(intOrString(current_key));
+        current_key = "";
+    }
+
+    if (!current_key.empty()) {
+        path_parts.emplace_back(intOrString(current_key));
+    }
+
+    return path_parts;
+}
 
 void flattenPath(json &root,
                  json &result,
@@ -118,5 +123,38 @@ json flatten(json &root, const std::string &separator, EscapeType escape, bool m
 json inflate(json &flat_json, const std::string &separator, EscapeType escape, bool mark_arrays) {
     json result;
 
+    for (const auto &item: flat_json.items()) {
+        vector<variant<long int, string>> path = splitPath(item.key(), separator, escape, mark_arrays);
+        deepSetJson(result, path.begin(), path.end(), item.value());
+    }
     return result;
+}
+
+void deepSetJson(json &obj, const PathIt &path_start, const PathIt &path_end, const json &value) {
+    if (path_start == path_end) {
+        obj = value;
+        return;
+    }
+
+    if (path_start->index() == 0) {
+        // It is a list
+        long int idx = std::get<long int>(*path_start);
+
+        if (!obj.empty() && !obj.is_array()) {
+            throw std::invalid_argument("Conflicting path, trying to fit an array.");
+        }
+        if (obj.empty() || obj.size() < idx) {
+            for (uint64_t i = obj.size(); i <= idx; i++) {
+                obj.push_back(nullptr);
+            }
+        }
+        deepSetJson(obj[idx], path_start + 1, path_end, value);
+    } else {
+        // It is a dict
+        string key = std::get<string>(*path_start);
+        if (!obj.empty() && !obj.is_object()) {
+            throw std::invalid_argument("Conflicting path, trying to fit an object.");
+        }
+        deepSetJson(obj[key], path_start + 1, path_end, value);
+    }
 }

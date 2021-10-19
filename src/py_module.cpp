@@ -26,6 +26,18 @@ PYBIND11_MODULE(flatten_json, module) {
                py::arg("mark_arrays") = true
     );
 
+    module.def("inflate",
+               [](py::object &flat_json, const std::string &separator, EscapeType escape, bool mark_arrays) {
+                   json json_obj = pyorderedjson::to_json(flat_json);
+                   return pyorderedjson::from_json(inflate(json_obj, separator, escape, mark_arrays));
+               },
+               py::return_value_policy::take_ownership,
+               py::arg("flat_json"),
+               py::arg("separator") = ".",
+               py::arg("escape") = EscapeType::SLASH,
+               py::arg("mark_arrays") = true
+    );
+
     module.def("make_path",
                &makePath,
                py::return_value_policy::take_ownership,
@@ -34,7 +46,7 @@ PYBIND11_MODULE(flatten_json, module) {
                py::arg("separator") = ".",
                py::arg("escape") = EscapeType::SLASH
     );
-    
+
     module.def("split_path",
                &splitPath,
                py::return_value_policy::take_ownership,
