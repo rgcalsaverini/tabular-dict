@@ -1,11 +1,11 @@
-# Flatten JSON
+# Tabular Dict
 
 A Python3 library to flatten and inflate lists and dictionaries:
 
 For example, flattening something like this:
 
 ```python
-from flatten_json import flatten
+from tabular_dict import flatten
 
 flatten({
     'some_key': {
@@ -28,7 +28,7 @@ will render you a flat tabular structure like this:
 which can be inflated to the original without loss like this:
 
 ```python
-from flatten_json import inflate
+from tabular_dict import inflate
 
 inflate({
     'some_key.foo': 'bar',
@@ -63,7 +63,7 @@ A dict with the flattened structure.
 #### Examples
 
 ```python
-from flatten_json import flatten
+from tabular_dict import flatten
 
 flatten({
     'a': {'b': {'c': {'d': 'e'}}},
@@ -99,7 +99,7 @@ A dict or list with the inflated data
 #### Examples
 
 ```python
-from flatten_json import inflate
+from tabular_dict import inflate
 
 inflate({
     'a.b.c.d': 'e',
@@ -144,7 +144,7 @@ There are three accepted escape types:
 Example:
 
 ```python
-from flatten_json import escape_type, make_path
+from tabular_dict import escape_type, make_path
 
 # Gives you "\\some\-example"
 print(make_path('', '\some-example', separator='-', escape=escape_type.SLASH))
@@ -176,7 +176,7 @@ A string with the concatenated path and key
 #### Examples
 
 ```python3
-from flatten_json import make_path
+from tabular_dict import make_path
 
 # Gives you "key"
 print(make_path('', 'key'))
@@ -208,7 +208,7 @@ A list with the individual keys that make up the path
 #### Examples
 
 ```python3
-from flatten_json import split_path
+from tabular_dict import split_path
 
 # Gives you ["1"]
 print(split_path('1'))

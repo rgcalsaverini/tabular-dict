@@ -8,6 +8,9 @@ import tempfile
 import os
 import subprocess
 
+with open('README.md', 'r') as fh:
+    long_description = fh.read()
+
 
 class CMakeExtension(Extension):
 
@@ -30,13 +33,16 @@ class build_ext(build_ext_orig):
 
 
 setup(
-    name='flatten_json',
-    version='0.0.1',
-    author='Celus',
+    name='tabular_dict',
+    version='0.0.4',
+    author='Rui Calsaverini',
     packages=[''],
     package_dir={'': '.'},
-    ext_modules=[CMakeExtension('flatten_json')],
+    ext_modules=[CMakeExtension('tabular_dict')],
     cmdclass={'build_ext': build_ext},
-    package_data={'': ['flatten_json.cpython-38-x86_64-linux-gnu.so']},
+    package_data={'': ['tabular_dict.cpython-38-x86_64-linux-gnu.so']},
     zip_safe=False,
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    url='https://github.com/rgcalsaverini/tabular-dict',
 )

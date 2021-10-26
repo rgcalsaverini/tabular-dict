@@ -1,4 +1,4 @@
-from flatten_json import flatten, inflate
+from tabular_dict import flatten, inflate
 
 _golden_test = {
     '0': [1, True, None, 2.1234, 0.1, {'a': 1}],

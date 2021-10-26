@@ -1,5 +1,5 @@
 import pytest
-from flatten_json import make_path, escape_type
+from tabular_dict import make_path, escape_type
 
 
 def test_first_key():

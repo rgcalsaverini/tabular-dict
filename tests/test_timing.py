@@ -1,5 +1,5 @@
 import time
-from flatten_json import flatten, inflate
+from tabular_dict import flatten, inflate
 import collections
 
 

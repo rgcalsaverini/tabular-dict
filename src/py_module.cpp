@@ -5,7 +5,7 @@
 #include "pybind11_json/pybind11_json.h"
 #include "flatten.h"
 
-PYBIND11_MODULE(flatten_json, module) {
+PYBIND11_MODULE(tabular_dict, module) {
     module.doc() = "JSON flattening utilities";
 
     py::enum_<EscapeType>(module, "escape_type")

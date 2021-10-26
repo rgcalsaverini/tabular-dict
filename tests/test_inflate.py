@@ -1,4 +1,4 @@
-from flatten_json import inflate
+from tabular_dict import inflate
 
 
 def test_inflate_minimal():

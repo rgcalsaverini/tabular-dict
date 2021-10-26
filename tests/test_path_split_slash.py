@@ -1,5 +1,5 @@
 import pytest
-from flatten_json import split_path, escape_type
+from tabular_dict import split_path, escape_type
 
 
 def test_split_escaped_dot():
